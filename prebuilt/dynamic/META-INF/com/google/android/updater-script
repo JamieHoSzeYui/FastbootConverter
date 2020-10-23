@@ -1,0 +1,37 @@
+# Update dynamic partition metadata
+
+assert(update_dynamic_partitions(package_extract_file("dynamic_partitions_op_list")));
+
+# Patch partition product
+
+ui_print("Patching product image unconditionally...");
+show_progress(0.100000, 0);
+block_image_update(map_partition("product"), package_extract_file("product.transfer.list"), "product.new.dat.br", "product.patch.dat") ||
+  abort("E2001: Failed to update product image.");
+delete_recursive("/data/system/package_cache");
+
+# Patch partition vendor
+
+ui_print("Patching vendor image unconditionally...");
+show_progress(0.100000, 0);
+block_image_update(map_partition("vendor"), package_extract_file("vendor.transfer.list"), "vendor.new.dat.br", "vendor.patch.dat") ||
+  abort("E2001: Failed to update vendor image.");
+delete_recursive("/data/system/package_cache");
+
+# Patch partition system
+
+ui_print("Patching system image unconditionally...");
+show_progress(0.700000, 0);
+block_image_update(map_partition("system"), package_extract_file("system.transfer.list"), "system.new.dat.br", "system.patch.dat") ||
+  abort("E1001: Failed to update system image.");
+delete_recursive("/data/system/package_cache");
+
+# --- End patching dynamic partitions ---
+
+show_progress(0.020000, 10);
+run_program("/tmp/install/bin/backuptool.sh", "restore", map_partition("system"), "ext4");
+package_extract_file("boot.img", "/dev/block/bootdevice/by-name/boot");
+show_progress(0.100000, 10);
+ui_print("Patching firmware images...");
+package_extract_file("dtbo.img", "/dev/block/bootdevice/by-name/dtbo");
+set_progress(1.000000);
